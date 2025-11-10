@@ -1,0 +1,39 @@
+`timescale 1ns / 1ps
+
+module ALU32Bit(
+    input  wire [31:0] A, B,
+    input  wire [3:0]  ALUControl,
+    output reg  [31:0] ALUResult,
+    output reg         Zero
+);
+    // Signed views for MIPS signed ops
+    wire signed [31:0] sA = $signed(A);
+    wire signed [31:0] sB = $signed(B);
+
+    always @(*) begin
+        case (ALUControl)
+            4'h0: ALUResult = A + B;                        // add
+            4'h1: ALUResult = A - B;                        // sub
+            4'h2: ALUResult = A * B;                        // mult (lab simplification)
+            4'h3: ALUResult = A | B;                        // or
+            4'h4: ALUResult = A ^ B;                        // xor
+            4'h5: ALUResult = ~(A | B);                     // nor
+            4'h6: ALUResult = A & B;                        // and
+            4'h7: ALUResult = A << B[4:0];                  // sll (mask to 5 bits)       
+            4'h8: ALUResult = A >> B[4:0];                  // srl (logical)               
+            4'h9: ALUResult = (sA < sB) ? 32'd1 : 32'd0;    // slt (signed)
+
+            // Branch-comparator ops:
+            // Return 32'b0 when the condition is TRUE so that Zero==1 ? condition met.
+            4'hA: ALUResult = (sA <  0) ? 32'd0 : 32'd1; // BLTZ  : A < 0
+            4'hB: ALUResult = (sA >  0) ? 32'd0 : 32'd1; // BGTZ  : A > 0
+            4'hC: ALUResult = (sA <= 0) ? 32'd0 : 32'd1; // BLEZ  : A <= 0
+            4'hD: ALUResult = (sA >= 0) ? 32'd0 : 32'd1; // BGEZ  : A >= 0
+            4'hE: ALUResult = (A  != B) ? 32'd0 : 32'd1; // BNE   : A != B
+
+            default: ALUResult = 32'd0;
+        endcase
+
+        Zero = (ALUResult == 32'd0);
+    end
+endmodule
