@@ -4,7 +4,6 @@ module ALUControlUnit(
     input  wire [1:0] ALUOp,
     input  wire [5:0] funct,
     input  wire [5:0] OpCode,
-    input  wire [2:0] branchType,     // used only when ALUOp == 2'b01
     output reg  [3:0] ALUControl
 );
     // 4-bit opcodes (example set - make sure your ALU implements these):
@@ -19,22 +18,9 @@ module ALUControlUnit(
                 // LW/SW -> add address
                 ALUControl = 4'h0;
             end
-
-            2'b01: begin
-                // Branches
-                // BEQ/BNE typically use SUB + Zero flag,
-                // but here we expose explicit compare ops for clarity.
-                case (branchType)
-                    3'b000: ALUControl = 4'h1; // BEQ -> SUB, use Zero==1
-                    3'b001: ALUControl = 4'hE; // BNE -> CMP_NE (or SUB + !Zero)
-                    3'b010: ALUControl = 4'hD; // BGEZ -> CMP_GEZ (signed)
-                    3'b011: ALUControl = 4'hB; // BGTZ -> CMP_GTZ (signed)
-                    3'b100: ALUControl = 4'hC; // BLEZ -> CMP_LEZ (signed)
-                    3'b101: ALUControl = 4'hA; // BLTZ -> CMP_LTZ (signed)
-                    default: ALUControl = 4'hF; // BR_NONE / unknown
-                endcase
-            end
-           
+            
+            //2'b01: deleted (no longer used)
+            
             2'b10: begin
                 // R-type
                 case (funct)
