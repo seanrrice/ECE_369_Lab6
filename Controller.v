@@ -13,7 +13,6 @@ module Controller(
   //for jumps
   output reg         DoJump,
   output reg         DoJR,
-  output reg         IsJal,
   output reg         IsShift
 );
 
@@ -88,7 +87,6 @@ module Controller(
     extOp        = 1'b1;              //sign extend by default
     DoJump       = 1'b0;
     DoJR         = 1'b0;
-    IsJal        = 1'b0;
     IsShift      = 1'b0;
     
   //-------------------------NOP------------------------------------------
@@ -119,31 +117,26 @@ module Controller(
       // ---------------- BRANCHES ----------------
       OP_BEQ: begin
         Branch     = 1'b1;
-        ALUOp      = 2'b01;
         branchType = BEQ;
       end
 
       OP_BNE: begin
         Branch     = 1'b1;
-        ALUOp      = 2'b01;
         branchType = BNE;
       end
 
       OP_BLEZ: begin
         Branch     = 1'b1;
-        ALUOp      = 2'b01;
         branchType = BLEZ;
       end
 
       OP_BGTZ: begin
         Branch     = 1'b1;
-        ALUOp      = 2'b01;
         branchType = BGTZ;
       end
 
       OP_REGI: begin
         Branch = 1'b1;
-        ALUOp  = 2'b01;
         case (rt)
           5'b00000: branchType = BLTZ;
           5'b00001: branchType = BGEZ;
@@ -158,7 +151,6 @@ module Controller(
 
       OP_JAL: begin
         DoJump = 1'b1;        //behaves like J (causes jump)
-        IsJal = 1'b1;         //signals we also need to link
         RegWrite = 1'b1;      // we'll write to $ra in WB
         RegDst   = RD_RA;     // choose $ra as destination
         MemToReg = M2R_PC8;   // choose PC+8 as write data
