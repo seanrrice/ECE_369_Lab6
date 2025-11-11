@@ -16,14 +16,12 @@ module ID_EX (
 
     //inputs from Controller
     input  [1:0]       RegDst_in, MemToReg_in,
-    input              RegWrite_in, ALUSrc_in, Branch_in, extOp_in,
+    input              RegWrite_in, ALUSrc_in, extOp_in,
     input  [1:0]       ALUOp_in,
     input              MemRead_in, MemWrite_in,
-    input  [2:0]       branchType_in,
     input  [1:0]       loadWidth_in,
     input              loadUnsigned_in,
     input  [1:0]       storeWidth_in,
-    input              DoJump_in, DoJR_in, IsJal_in,
     input              IsShift_in,
 
     //other inputs from ID stage
@@ -41,15 +39,12 @@ module ID_EX (
 
     //Control outputs
     output wire   [1:0]       RegDst_out, MemToReg_out,
-    output wire               RegWrite_out, ALUSrc_out, Branch_out, extOp_out,
+    output wire               RegWrite_out, ALUSrc_out, extOp_out,
     output wire   [1:0]       ALUOp_out,
     output wire               MemRead_out, MemWrite_out,
-    output wire   [2:0]       branchType_out,
     output wire   [1:0]       loadWidth_out,
     output wire               loadUnsigned_out,
     output wire   [1:0]       storeWidth_out,
-    output wire               DoJump_out,
-    output wire               DoJR_out, IsJal_out,
     output wire               IsShift_out,
 
     
@@ -68,14 +63,12 @@ module ID_EX (
 );
     //controller signals
     reg [1:0]   RegDst_q, MemToReg_q;
-    reg         RegWrite_q, ALUSrc_q, Branch_q, extOp_q;
+    reg         RegWrite_q, ALUSrc_q, extOp_q;
     reg [1:0]   ALUOp_q;
     reg         MemRead_q, MemWrite_q;
-    reg [2:0]   branchType_q;
     reg [1:0]   loadWidth_q;
     reg         loadUnsigned_q;
     reg [1:0]   storeWidth_q;  
-    reg         DoJump_q, DoJR_q, IsJal_q;
     reg         IsShift_q;
  
 
@@ -93,17 +86,12 @@ module ID_EX (
     assign MemWrite_out         =   MemWrite_q;
     assign RegWrite_out         =   RegWrite_q;
     assign ALUSrc_out           =   ALUSrc_q;
-    assign Branch_out           =   Branch_q;
     assign extOp_out            =   extOp_q;
     assign ALUOp_out            =   ALUOp_q;
     assign MemRead_out          =   MemRead_q;
-    assign branchType_out       =   branchType_q;
     assign loadWidth_out        =   loadWidth_q;
     assign loadUnsigned_out     =   loadUnsigned_q;
     assign storeWidth_out       =   storeWidth_q;
-    assign DoJump_out           =   DoJump_q;
-    assign DoJR_out             =   DoJR_q;
-    assign IsJal_out            =   IsJal_q;
     assign JumpTarget_out       =   JumpTarget_q;
     assign PCPlus8_out          =   PCPlus8_q;
     assign IsShift_out          =   IsShift_q;
@@ -130,15 +118,10 @@ module ID_EX (
             ALUOp_q      <= 2'b00;
             RegDst_q     <= 2'b00;
             MemToReg_q   <= 2'b00;
-            Branch_q     <= 1'b0;
-            branchType_q <= 3'b000;
             loadWidth_q  <= 2'b00;
             loadUnsigned_q <= 1'b0;
             storeWidth_q <= 2'b00;
             extOp_q      <= 1'b0;
-            DoJump_q     <= 1'b0;
-            DoJR_q       <= 1'b0;
-            IsJal_q      <= 1'b0;
             IsShift_q    <= 1'b0;
             
             
@@ -166,15 +149,10 @@ module ID_EX (
                 ALUOp_q      <= 2'b00;
                 RegDst_q     <= 2'b00;
                 MemToReg_q   <= 2'b00;
-                Branch_q     <= 1'b0;
-                branchType_q <= 3'b000;
                 loadWidth_q  <= 2'b00;
                 loadUnsigned_q <= 1'b0;
                 storeWidth_q <= 2'b00;
                 extOp_q      <= 1'b0;
-                DoJump_q     <= 1'b0;
-                DoJR_q       <= 1'b0;
-                IsJal_q      <= 1'b0;
                 IsShift_q    <= 1'b0;
                 
                 // zero data as well (safe default; optional per your design)
@@ -196,18 +174,13 @@ module ID_EX (
                 MemToReg_q          <= MemToReg_in;
                 RegWrite_q          <= RegWrite_in;
                 ALUSrc_q            <= ALUSrc_in;
-                Branch_q            <= Branch_in;
                 extOp_q             <= extOp_in;
                 ALUOp_q             <= ALUOp_in;
                 MemRead_q           <= MemRead_in;
                 MemWrite_q          <= MemWrite_in;
-                branchType_q        <= branchType_in;
                 loadWidth_q         <= loadWidth_in;
                 loadUnsigned_q      <= loadUnsigned_in;
-                storeWidth_q        <= storeWidth_in;
-                DoJump_q            <= DoJump_in;
-                DoJR_q              <= DoJR_in;
-                IsJal_q             <= IsJal_in;
+                storeWidth_q        <= storeWidth_in;  
                 IsShift_q           <= IsShift_in;
                 
                 ReadData1_q  <= ReadData1_in;
