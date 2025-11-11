@@ -3,8 +3,7 @@
 module ALU32Bit(
     input  wire [31:0] A, B,
     input  wire [3:0]  ALUControl,
-    output reg  [31:0] ALUResult,
-    output reg         Zero
+    output reg  [31:0] ALUResult
 );
     // Signed views for MIPS signed ops
     wire signed [31:0] sA = $signed(A);
@@ -23,17 +22,8 @@ module ALU32Bit(
             4'h8: ALUResult = A >> B[4:0];                  // srl (logical)               
             4'h9: ALUResult = (sA < sB) ? 32'd1 : 32'd0;    // slt (signed)
 
-            // Branch-comparator ops:
-            // Return 32'b0 when the condition is TRUE so that Zero==1 ? condition met.
-            4'hA: ALUResult = (sA <  0) ? 32'd0 : 32'd1; // BLTZ  : A < 0
-            4'hB: ALUResult = (sA >  0) ? 32'd0 : 32'd1; // BGTZ  : A > 0
-            4'hC: ALUResult = (sA <= 0) ? 32'd0 : 32'd1; // BLEZ  : A <= 0
-            4'hD: ALUResult = (sA >= 0) ? 32'd0 : 32'd1; // BGEZ  : A >= 0
-            4'hE: ALUResult = (A  != B) ? 32'd0 : 32'd1; // BNE   : A != B
-
             default: ALUResult = 32'd0;
         endcase
 
-        Zero = (ALUResult == 32'd0);
     end
 endmodule
