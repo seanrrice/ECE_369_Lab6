@@ -59,12 +59,16 @@
     
     //for jump instruction
     wire [31:0] ID_JumpTarget; 
+    wire [31:0] ID_JRTarget;
     wire [31:0] ID_PCPlus8;        //for Jal 
     wire [31:0] ID_Shamt;
     wire [4:0]  ID_Rt;
     wire [4:0]  ID_Rd;
     wire [5:0]  ID_Funct;
     wire [5:0]  ID_OpCode;
+    wire        ID_BranchTaken;
+    wire [31:0] ID_BranchTarget;
+    wire [31:0] ID_NextPC;
    
     wire [31:0] EX_ReadData1;
     wire [31:0] EX_ReadData2;
@@ -74,32 +78,24 @@
     wire [4:0]  EX_WriteRegister;
     wire [3:0]  EX_ALUControl;
     wire [31:0] EX_ALUResult;
-    wire        EX_ALUZeroFlag;
     wire [31:0] EX_ALUInputA;
     wire [31:0] EX_ALUInputB;
     wire [31:0] EX_RdInstMuxOut;
     wire [31:0] EX_PCAddResult;
     
-    wire [31:0] EX_JumpTarget; 
     wire [31:0] EX_PCPlus8;        //for Jal 
     wire [31:0] EX_PCPlus4;        //for mux in MEM stage determining next PC value
-    wire        EX_BranchTaken;
-    wire [31:0] EX_JRTarget;
     wire [31:0] EX_Shamt;
     wire [4:0]  EX_Rt, EX_Rd;
     wire [5:0]  EX_Funct;
     wire [5:0]  EX_OpCode;
     
-    wire        MEM_ALUZeroFlag;
     wire [31:0] MEM_MemReadData;
     wire [31:0] MEM_ALUResult;
     wire [31:0] MEM_ReadData2;
     wire [4:0]  MEM_WriteRegister;
     wire [31:0] MEM_ExecutionAdderResult;
-    wire [31:0] MEM_JRTarget, MEM_JumpTarget;
-    wire        MEM_BranchTaken;
-    wire [31:0] MEM_PCPlus8, MEM_PCPlus4;
-    wire [31:0] MEM_NextPC;
+    wire [31:0] MEM_PCPlus8, MEM_PCPlus4;                    //delete MEM_PCPlus4?
     wire [31:0] MEM_StoreData;
     
     wire [31:0] WB_ALUResult;
@@ -118,31 +114,27 @@
   wire  [1:0]  ID_LoadWidth;
   wire         ID_LoadUnsigned;
   wire  [1:0]  ID_StoreWidth;
-  wire         ID_DoJump, ID_DoJR, ID_IsJal;
+  wire         ID_DoJump, ID_DoJR;
   wire         ID_IsShift;
   
   
   //Controls EX stage
   wire  [1:0]  EX_RegDst, EX_MemToReg;
-  wire         EX_RegWrite, EX_ALUSrc, EX_Branch, EX_ExtOp;
+  wire         EX_RegWrite, EX_ALUSrc, EX_ExtOp;
   wire  [1:0]  EX_ALUOp;
   wire         EX_MemRead, EX_MemWrite;
-  wire  [2:0]  EX_BranchType;
   wire  [1:0]  EX_LoadWidth;
   wire         EX_LoadUnsigned;
   wire  [1:0]  EX_StoreWidth;
-  wire         EX_DoJump, EX_DoJR, EX_IsJal;
   wire         EX_IsShift;
   
   //Controls MEM stage                  
   wire  [1:0]  MEM_MemToReg;
-  wire         MEM_RegWrite, MEM_Branch;
+  wire         MEM_RegWrite;
   wire         MEM_MemRead, MEM_MemWrite;
-  wire  [2:0]  MEM_BranchType;
   wire  [1:0]  MEM_LoadWidth;
   wire         MEM_LoadUnsigned;
   wire  [1:0]  MEM_StoreWidth;
-  wire         MEM_DoJump, MEM_DoJR, MEM_IsJal;
   wire [1:0]   a;                                   // byte lane within the 32-bit word (used for Load/Store operations)
   wire [3:0]   MEM_ByteEnable;                      //used for Store Operations
   
@@ -167,7 +159,7 @@
 //------------------------------------------------------- Instruction Fetch Stage of Data Path----------------------------------------------------------
     
    // Mux32Bit4To1 Mux32Bit4To1_1(IF_PCAddResult, MEM_ExecutionAdderResult, **JumpTarget**, **JRTarget**, MEM_PCSrc, IF_MuxToPCValue);  //FIXME PCSrc
-    ProgramCounter ProgramCounter_1(MEM_NextPC, Reset, Clk, IF_PCResult);
+    ProgramCounter ProgramCounter_1(ID_NextPC, Reset, Clk, IF_PCResult);
     PCAdder PCAdder_1(IF_PCResult, IF_PCAddResult);
     InstructionMemory InstructionMemory_1(IF_PCResult, IF_Instruction);
     
@@ -188,8 +180,36 @@
     RegisterFile RegisterFile_1(ID_Instruction[25:21], ID_Instruction[20:16], WB_WriteRegister, WB_WriteData, WB_RegWrite, Clk, ID_ReadData1, ID_ReadData2);
     SignExtension SignExtension_1(ID_Instruction[15:0], ID_ExtOp, ID_InstSignExtOut);
     
+    //----------------------------------Resolve Branch & Jumps, Get NextPC value--------------------------------------
+  
+    BranchLogic BranchLogic1(ID_ReadData1, ID_Read_Data2, ID_Branch, ID_BranchType, ID_BranchTaken); 
+    assign ID_BranchTarget = {ID_InstSignExtOut << 2} + ID_PCAddResult;
+   
+    
     assign ID_JumpTarget = { ID_PCAddResult[31:28], ID_Instruction[25:0], 2'b00};   //jump address
-    assign ID_PCPlus8    = ID_PCAddResult + 32'd4;                                     //write register for Jal
+    assign ID_JRTarget    = ID_ReadData1;                 //rs value
+    
+   //Priority mux to determine next PC value
+    reg [31:0] next_pc;
+    always @* begin
+        if(ID_DoJR) begin
+            next_pc = ID_JRTarget;
+        end
+        else if(ID_DoJump) begin
+            next_pc = ID_JumpTarget;
+        end
+        else if(ID_BranchTaken)begin
+            next_pc = ID_BranchTarget;
+        end
+        else begin
+            next_pc = ID_PCAddResult;
+        end
+     end 
+     
+     assign ID_NextPC = next_pc;
+   //-----------------------------------------------------------------------------------------------
+       
+    assign ID_PCPlus8    = ID_PCAddResult + 32'd4;                                  //write register for Jal
     assign ID_Shamt      = {27'b0, ID_Instruction[10:6]};
     
     assign ID_OpCode     = ID_Instruction[31:26];
@@ -197,9 +217,7 @@
     assign ID_Rd         = ID_Instruction[15:11];
     assign ID_Funct      = ID_Instruction[5:0];
     
-    
-    
-    
+
     Controller Controller_1(
           .instruction(ID_Instruction),
           .RegDst(ID_RegDst),
@@ -217,9 +235,9 @@
           .storeWidth(ID_StoreWidth),
           .DoJump(ID_DoJump),
           .DoJR(ID_DoJR),
-          .IsJal(ID_IsJal),
           .IsShift(ID_IsShift)
         );
+        
 
     // (ID/EX) Data Path Register - Path to Stage 3
     ID_EX ID_EX_1(
@@ -235,18 +253,13 @@
         .MemToReg_in(ID_MemToReg),
         .RegWrite_in(ID_RegWrite),
         .ALUSrc_in(ID_ALUSrc),
-        .Branch_in(ID_Branch),
         .extOp_in(ID_ExtOp),
         .ALUOp_in(ID_ALUOp),
         .MemRead_in(ID_MemRead),
         .MemWrite_in(ID_MemWrite),
-        .branchType_in(ID_BranchType),
         .loadWidth_in(ID_LoadWidth),
         .loadUnsigned_in(ID_LoadUnsigned),
         .storeWidth_in(ID_StoreWidth),
-        .DoJump_in(ID_DoJump),
-        .DoJR_in(ID_DoJR),
-        .IsJal_in(ID_IsJal),
         .IsShift_in(ID_IsShift),
     
         // Inputs from ID stage (data/regs)
@@ -268,18 +281,13 @@
         .MemToReg_out(EX_MemToReg),
         .RegWrite_out(EX_RegWrite),
         .ALUSrc_out(EX_ALUSrc),
-        .Branch_out(EX_Branch),
         .extOp_out(EX_ExtOp),
         .ALUOp_out(EX_ALUOp),
         .MemRead_out(EX_MemRead),
         .MemWrite_out(EX_MemWrite),
-        .branchType_out(EX_BranchType),
         .loadWidth_out(EX_LoadWidth),
         .loadUnsigned_out(EX_LoadUnsigned),
         .storeWidth_out(EX_StoreWidth),
-        .DoJump_out(EX_DoJump),
-        .DoJR_out(EX_DoJR),
-        .IsJal_out(EX_IsJal),
         .IsShift_out(EX_IsShift),
         
         .ReadData1_out(EX_ReadData1),
@@ -290,7 +298,6 @@
         .Rd_out(EX_Rd),
         .Funct_out(EX_Funct),
         .PC_out(EX_PCAddResult),
-        .JumpTarget_out(EX_JumpTarget),
         .PCPlus8_out(EX_PCPlus8),
         .Shamt_out(EX_Shamt)
     
@@ -305,14 +312,10 @@
     Mux32Bit2To1 RdInstMux(EX_ReadData2, EX_InstSignExtOut, EX_ALUSrc, EX_RdInstMuxOut);                //selects rd or inst to ALU inputB
     Mux32Bit2To1 MuxToALUInputB(EX_RdInstMuxOut, EX_Shamt, EX_IsShift, EX_ALUInputB);                   //selects Shamt for ALUInputB in case for shift operation
     
-    ALUControlUnit ALUControlUnit_1 (EX_ALUOp, EX_Funct, EX_OpCode, EX_BranchType, EX_ALUControl);
-    ALU32Bit ALU32Bit_1(EX_ALUInputA, EX_ALUInputB,EX_ALUControl, EX_ALUResult, EX_ALUZeroFlag);
+    ALUControlUnit ALUControlUnit_1 (EX_ALUOp, EX_Funct, EX_OpCode, EX_ALUControl);
+    ALU32Bit ALU32Bit_1(EX_ALUInputA, EX_ALUInputB, EX_ALUControl, EX_ALUResult);
     
-    //logic for determining branches, jumps
-  
-    assign EX_BranchTaken = EX_Branch & EX_ALUZeroFlag;    //condition for conditional branch to be taken (see ALU)
     assign EX_PCPlus4     = EX_PCAddResult;  
-    assign EX_JRTarget    = EX_ReadData1;                 //rs value
     
     //mux to select Write Register
     assign EX_WriteRegister = 
@@ -335,24 +338,14 @@ EX_MEM EX_MEM_1 (
     .RegWrite_in(EX_RegWrite),
     .MemRead_in(EX_MemRead),
     .MemWrite_in(EX_MemWrite),
-    .Branch_in(EX_Branch),
-    .branchType_in(EX_BranchType),
     .loadWidth_in(EX_LoadWidth),
     .loadUnsigned_in(EX_LoadUnsigned),
     .storeWidth_in(EX_StoreWidth),
-    .DoJump_in(EX_DoJump),
-    .DoJR_in(EX_DoJR),
-    .IsJal_in(EX_IsJal),
 
     // ----- Data / flags -----
-    .PCBranch_in(EX_ExecutionAdderResult),
-    .Zero_in(EX_ALUZeroFlag),
     .ALUResult_in(EX_ALUResult),
     .WriteData_in(EX_ReadData2),
     .WriteReg_in(EX_WriteRegister),
-    .JRTarget_in(EX_JRTarget),
-    .JumpTarget_in(EX_JumpTarget),
-    .BranchTaken_in(EX_BranchTaken),
     .PCPlus8_in(EX_PCPlus8),
     .PCPlus4_in(EX_PCPlus4),
 
@@ -361,23 +354,13 @@ EX_MEM EX_MEM_1 (
     .RegWrite_out(MEM_RegWrite),
     .MemRead_out(MEM_MemRead),
     .MemWrite_out(MEM_MemWrite),
-    .Branch_out(MEM_Branch),
-    .branchType_out(MEM_BranchType),
     .loadWidth_out(MEM_LoadWidth),
     .loadUnsigned_out(MEM_LoadUnsigned),
     .storeWidth_out(MEM_StoreWidth),
-    .DoJump_out(MEM_DoJump),
-    .DoJR_out(MEM_DoJR),
-    .IsJal_out(MEM_IsJal),
 
-    .PCBranch_out(MEM_ExecutionAdderResult),
-    .Zero_out(MEM_ALUZeroFlag),
     .ALUResult_out(MEM_ALUResult),
     .WriteData_out(MEM_ReadData2),
     .WriteReg_out(MEM_WriteRegister),
-    .JRTarget_out(MEM_JRTarget),
-    .JumpTarget_out(MEM_JumpTarget),
-    .BranchTaken_out(MEM_BranchTaken),
     .PCPlus8_out(MEM_PCPlus8),
     .PCPlus4_out(MEM_PCPlus4)
 );
@@ -387,26 +370,7 @@ EX_MEM EX_MEM_1 (
     
     DataMemory DataMemory_1(MEM_ALUResult, MEM_StoreData, Clk, MEM_ByteEnable, MEM_MemWrite, MEM_MemRead, MEM_MemReadData);
     
-    //Priority mux to determine next PC value
-   // wire [31:0] MEM_NextPC;                       declared at top
-    reg [31:0] next_pc;
-    always @* begin
-        if(MEM_DoJR) begin
-            next_pc = MEM_JRTarget;
-        end
-        else if(MEM_DoJump) begin
-            next_pc = MEM_JumpTarget;
-        end
-        else if(MEM_BranchTaken)begin
-            next_pc = MEM_ExecutionAdderResult;
-        end
-        else begin
-            next_pc = MEM_PCPlus4;
-        end
-     end 
-     
-     assign MEM_NextPC = next_pc;
-       
+   
     
  
         // ------------- Load glue (LW/LH/LHU/LB/LBU) ----------------------------------
