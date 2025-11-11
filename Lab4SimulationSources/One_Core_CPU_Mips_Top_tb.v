@@ -78,10 +78,10 @@ module One_Core_CPU_Mips_Top_tb;
     else if(!Reset && dut.MEM_MemWrite) begin
        $display("No register written (Store)   (PC=%0d)", dut.IF_PCResult);
     end
-    else if (!Reset && dut.MEM_BranchTaken) begin
+    else if (!Reset && dut.ID_BranchTaken) begin
         $display("No register written (Branch)   (PC=%0d)", dut.IF_PCResult);
     end
-    else if (!Reset && dut.MEM_DoJump) begin
+    else if (!Reset && dut.ID_DoJump) begin
         $display("No register written (Jump)   (PC=%0d)", dut.IF_PCResult);
     end
     
