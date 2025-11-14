@@ -13,7 +13,9 @@ module Controller(
   //for jumps
   output reg         DoJump,
   output reg         DoJR,
-  output reg         IsShift
+  output reg         IsShift,
+  output reg         UsesRs,
+  output reg         UsesRt
 );
 
   // Primary opcodes
@@ -88,6 +90,8 @@ module Controller(
     DoJump       = 1'b0;
     DoJR         = 1'b0;
     IsShift      = 1'b0;
+    UsesRs       = 1'b0;
+    UsesRt       = 1'b0;
     
   //-------------------------NOP------------------------------------------
   
@@ -100,17 +104,22 @@ module Controller(
       OP_RTYPE: begin
         if (funct == FUNCT_JR) begin
           DoJR = 1'b1;
+          UsesRs = 1'b1;
         end
         else if ((funct == FUNCT_SLL || funct == FUNCT_SRL) && (rs == 5'b0)) begin    //shift operation
             IsShift = 1'b1;
             RegDst   = RD_RD;
             RegWrite = 1'b1;
             ALUOp    = 2'b10;
+            UsesRt   = 1'b1;
+            
         end
         else begin                      //regular R-Type
           RegDst   = RD_RD;
           RegWrite = 1'b1;
           ALUOp    = 2'b10;
+          UsesRs   = 1'b1;
+          UsesRt   = 1'b1;
         end
       end
 
@@ -118,30 +127,41 @@ module Controller(
       OP_BEQ: begin
         Branch     = 1'b1;
         branchType = BEQ;
+        UsesRs     = 1'b1;
+        UsesRt     = 1'b1;
       end
 
       OP_BNE: begin
         Branch     = 1'b1;
         branchType = BNE;
+        UsesRs     = 1'b1;
+        UsesRt     = 1'b1;
       end
 
       OP_BLEZ: begin
         Branch     = 1'b1;
         branchType = BLEZ;
+        UsesRs     = 1'b1;
       end
 
       OP_BGTZ: begin
         Branch     = 1'b1;
         branchType = BGTZ;
+        UsesRs     = 1'b1;
       end
 
       OP_REGI: begin
         Branch = 1'b1;
+        UsesRs = 1'b1;
         case (rt)
-          5'b00000: branchType = BLTZ;
-          5'b00001: branchType = BGEZ;
-          default:  branchType = BR_NONE;
-        endcase
+          5'b00000: begin
+             branchType = BLTZ;
+          end
+          5'b00001:begin
+             branchType = BGEZ;
+          end
+        default:  branchType = BR_NONE;
+       endcase
       end
 
       // ---------------- JUMPS ----------------
@@ -161,6 +181,7 @@ module Controller(
         RegWrite = 1'b1;
         ALUSrc   = 1'b1;
         ALUOp    = 2'b00;
+        UsesRs   = 1'b1;
       end
 
       OP_ANDI: begin
@@ -168,6 +189,7 @@ module Controller(
         ALUSrc   = 1'b1;
         ALUOp    = 2'b11;
         extOp    = 1'b0;
+        UsesRs   = 1'b1;
       end
 
       OP_ORI: begin
@@ -175,6 +197,7 @@ module Controller(
         ALUSrc   = 1'b1;
         ALUOp    = 2'b11;
         extOp    = 1'b0;
+        UsesRs   = 1'b1;
       end
 
       OP_XORI: begin
@@ -182,12 +205,14 @@ module Controller(
         ALUSrc   = 1'b1;
         ALUOp    = 2'b11;
         extOp    = 1'b0;
+        UsesRs   = 1'b1;
       end
 
       OP_SLTI: begin
         RegWrite = 1'b1;
         ALUSrc   = 1'b1;
         ALUOp    = 2'b11;
+        UsesRs   = 1'b1;
       end
 
       // ---------------- LOADS ----------------
@@ -197,6 +222,7 @@ module Controller(
         MemRead    = 1'b1;
         MemToReg   = M2R_MEM;
         loadWidth  = 2'b00;
+        UsesRs     = 1'b1;
       end
 
       OP_LB: begin
@@ -206,6 +232,7 @@ module Controller(
         MemToReg   = M2R_MEM;
         loadWidth  = 2'b10;
         loadUnsigned = 1'b0;
+        UsesRs       = 1'b1;
       end
 
       OP_LH: begin
@@ -215,6 +242,7 @@ module Controller(
         MemToReg   = M2R_MEM;
         loadWidth  = 2'b01;
         loadUnsigned = 1'b0;
+        UsesRs       = 1'b1;
       end
 
       // ---------------- STORES ----------------
@@ -222,18 +250,24 @@ module Controller(
         ALUSrc    = 1'b1;
         MemWrite  = 1'b1;
         storeWidth = 2'b00;
+        UsesRs     = 1'b1;
+        UsesRt     = 1'b1;
       end
 
       OP_SB: begin
         ALUSrc    = 1'b1;
         MemWrite  = 1'b1;
         storeWidth = 2'b10;
+        UsesRs     = 1'b1;
+        UsesRt     = 1'b1;
       end
 
       OP_SH: begin
         ALUSrc    = 1'b1;
         MemWrite  = 1'b1;
         storeWidth = 2'b01;
+        UsesRs     = 1'b1;
+        UsesRt     = 1'b1;
       end
 
       // ---------------- DEFAULT ----------------
