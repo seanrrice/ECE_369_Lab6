@@ -1,28 +1,8 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 11/02/2025 04:35:22 PM
-// Design Name: 
-// Module Name: One_Core_CPU_Mips_Top_tb
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
 
 module One_Core_CPU_Mips_Top_tb;
 
-  reg Clk = 0;
+  reg Clk   = 0;
   reg Reset = 1;
 
   // DUT
@@ -31,62 +11,65 @@ module One_Core_CPU_Mips_Top_tb;
   // 100 MHz clock
   always #5 Clk = ~Clk;
 
-  // Program (hex encodings)
-  // 0: ADDI $t1,$zero,1      -> 0x20090001
-  // 1: SLL  $t0,$t1,4        -> 0x00094100
-  // 2: SRL  $t2,$t0,1        -> 0x00085042
-  // 3: BEQ  $zero,$zero,-1   -> 0x1000FFFF   (infinite loop)
-//  localparam [31:0] PROG_3 = 32'h1000_FFFF;
-//  localparam [31:0] PROG_2 = 32'h0008_5042;
-//  localparam [31:0] PROG_1 = 32'h0009_4100;
-//  localparam [31:0] PROG_0 = 32'h2009_0001;
-
+  integer cycle = 0;
 
   // Init + reset
   initial begin
-    // preload instruction memory (hierarchical reference to IMEM array)
-    // Adjust "mem" to your internal name if different.
-    // If your InstructionMemory uses $readmemh internally, comment this block.
-//    dut.InstructionMemory_1.memory[0] = PROG_0; // address 0x00000000
-//    dut.InstructionMemory_1.memory[1] = PROG_1; // address 0x00000004
-//    dut.InstructionMemory_1.memory[2] = PROG_2; // address 0x00000008
-//    dut.InstructionMemory_1.memory[3] = PROG_3; // address 0x0000000C
+    // If your InstructionMemory uses $readmemh internally with a file
+    // like "lab6_test1.hex", you don't need to preload anything here.
+    // Just make sure the file path in InstructionMemory is correct.
 
     // Reset for 2 cycles
     Reset = 1;
     repeat (2) @(posedge Clk);
     Reset = 0;
 
-    // Run a bit, then finish
-    repeat (40) @(posedge Clk);
+    // Run for some cycles then finish
+    repeat (80) @(posedge Clk);  // a bit longer now, since we have stalls + loop
     $finish;
   end
 
-  // Wave dump (optional, for GTKWave)
+  // Wave dump (for GTKWave / Vivado sim)
   initial begin
     $dumpfile("One_Core_CPU_Mips_Top_tb.vcd");
     $dumpvars(0, One_Core_CPU_Mips_Top_tb);
   end
 
-  // Simple commit log from WB stage
-  // Prints when a register write happens
+  // Main monitor: track cycles, stalls, and WB commits
   always @(posedge Clk) begin
-    if (!Reset && dut.WB_RegWrite) begin
-      $display("[%0t] WB: R[%0d] <= %0d  (PC=%0d)",
-               $time, dut.WB_WriteRegister, dut.WB_WriteData, dut.IF_PCResult);
+    if (Reset) begin
+      cycle <= 0;
+    end else begin
+      cycle <= cycle + 1;
+
+      // --- STALL monitor (data hazards) ---
+      // Assumes PCWrite/IF_ID_Write/ID_EX_FlushCtrl are wires in top-level.
+      if (dut.ID_PCWrite == 1'b0) begin
+        $display("[%0t] C%0d STALL: PCWrite=0, IF_ID_Write=%b, ID_EX_FlushCtrl=%b, PC=%0d",
+                 $time, cycle, dut.IF_ID_Enable, dut.ID_EX_Flush, dut.IF_PCResult);
       end
-    else if(!Reset && dut.MEM_MemWrite) begin
-       $display("No register written (Store)   (PC=%0d)", dut.IF_PCResult);
+
+      // --- Branch / jump monitor (resolved in ID) ---
+      // Assumes these exist in your ID stage / top:
+      if (dut.ID_BranchTaken) begin
+        $display("[%0t] C%0d BRANCH taken at PC=%0d -> next PC=%0d",
+                 $time, cycle, dut.ID_PCAddResult - 4, dut.ID_PCPlus8 - 8);
+      end
+      if (dut.ID_DoJump) begin
+        $display("[%0t] C%0d JUMP at PC=%0d -> next PC=%0d",
+                 $time, cycle, dut.ID_PCPlus8 - 8, dut.ID_NextPC);
+      end
+
+      // --- Commit log from WB stage (your original) ---
+      if (dut.WB_RegWrite) begin
+        $display("[%0t] C%0d WB: R[%0d] <= %0d  (PC=%0d)",
+                 $time, cycle, dut.WB_WriteRegister, dut.WB_WriteData, dut.WB_PCPlus8 - 8);
+      end
+      else if (dut.MEM_MemWrite) begin
+        $display("[%0t] C%0d Store: MemWrite=1 (PC=%0d)",
+                 $time, cycle, dut.MEM_PCPlus8 - 8);
+      end
     end
-    else if (!Reset && dut.ID_BranchTaken) begin
-        $display("No register written (Branch)   (PC=%0d)", dut.IF_PCResult);
-    end
-    else if (!Reset && dut.ID_DoJump) begin
-        $display("No register written (Jump)   (PC=%0d)", dut.IF_PCResult);
-    end
-    
   end
+
 endmodule
-
-
-  
