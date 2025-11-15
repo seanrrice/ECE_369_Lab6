@@ -8,12 +8,14 @@ module ALU32Bit(
     // Signed views for MIPS signed ops
     wire signed [31:0] sA = $signed(A);
     wire signed [31:0] sB = $signed(B);
+    
+    wire signed [63:0] MulResult = sA * sB;
 
     always @(*) begin
         case (ALUControl)
             4'h0: ALUResult = A + B;                        // add
             4'h1: ALUResult = A - B;                        // sub
-            4'h2: ALUResult = A * B;                        // mult (lab simplification)
+            4'h2: ALUResult = MulResult[31:0];              //mul      
             4'h3: ALUResult = A | B;                        // or
             4'h4: ALUResult = A ^ B;                        // xor
             4'h5: ALUResult = ~(A | B);                     // nor
