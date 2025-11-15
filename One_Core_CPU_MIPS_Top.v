@@ -48,8 +48,14 @@
     wire [31:0] IF_PCAddResult;
     
     //for the IF_ID register -- to be implemented with hazard detection control unit
-    //wire enable;
-    //wire flush;
+    wire IF_ID_Enable;
+    wire IF_ID_Flush;
+    
+   // wire ID_EX_Enable;                     //this is always 1 (for now)
+    wire ID_EX_Flush;
+    
+    wire ID_PCWrite;                        //PC stalls if set to 0
+    
     
     wire [31:0] ID_Instruction;
     wire [31:0] ID_InstSignExtOut;
@@ -62,6 +68,7 @@
     wire [31:0] ID_JRTarget;
     wire [31:0] ID_PCPlus8;        //for Jal 
     wire [31:0] ID_Shamt;
+    wire [4:0]  ID_Rs;
     wire [4:0]  ID_Rt;
     wire [4:0]  ID_Rd;
     wire [5:0]  ID_Funct;
@@ -116,6 +123,8 @@
   wire  [1:0]  ID_StoreWidth;
   wire         ID_DoJump, ID_DoJR;
   wire         ID_IsShift;
+  wire         ID_UsesRs;
+  wire         ID_UsesRt;
   
   
   //Controls EX stage
@@ -150,26 +159,23 @@
              BLEZ    = 3'b100,
              BLTZ    = 3'b101,
              BR_NONE = 3'b111;
-   
-    // reimplement these signals later when hazard detection is considered
-  assign flush = 1'b0;
-  assign enable = 1'b1;
-   
+      
     
 //------------------------------------------------------- Instruction Fetch Stage of Data Path----------------------------------------------------------
     
    // Mux32Bit4To1 Mux32Bit4To1_1(IF_PCAddResult, MEM_ExecutionAdderResult, **JumpTarget**, **JRTarget**, MEM_PCSrc, IF_MuxToPCValue);  //FIXME PCSrc
-    ProgramCounter ProgramCounter_1(ID_NextPC, Reset, Clk, IF_PCResult);
+    ProgramCounter ProgramCounter_1(ID_NextPC, Reset, ID_PCWrite, Clk, IF_PCResult);
     PCAdder PCAdder_1(IF_PCResult, IF_PCAddResult);
     InstructionMemory InstructionMemory_1(IF_PCResult, IF_Instruction);
     
+   
     // (IF/ID) Data Path Register - Path to Stage 2
     IF_ID IF_ID_1(
         .clk           (Clk),
         .reset         (Reset),
-        .enable        (1'b1),             // later replaced by hazard/stall signal
-        .flush         (1'b0),             // later driven by branch/jump flush
-        .PC_in         (IF_PCAddResult),   // usually PC + 4
+        .enable        (IF_ID_Enable),             // later replaced by hazard/stall signal
+        .flush         (IF_ID_Flush),              // flush if jump or branch is taken
+        .PC_in         (IF_PCAddResult),           // usually PC + 4
         .Instruction_in(IF_Instruction),
         .PC_out        (ID_PCAddResult),
         .Instruction_out(ID_Instruction)
@@ -179,6 +185,20 @@
     
     RegisterFile RegisterFile_1(ID_Instruction[25:21], ID_Instruction[20:16], WB_WriteRegister, WB_WriteData, WB_RegWrite, Clk, ID_ReadData1, ID_ReadData2);
     SignExtension SignExtension_1(ID_Instruction[15:0], ID_ExtOp, ID_InstSignExtOut);
+    HDU HDU_1(
+        .ID_Rs(ID_Rs),
+        .ID_Rt(ID_Rt),
+        .ID_UsesRs(ID_UsesRs),
+        .ID_UsesRt(ID_UsesRt),
+        .EX_RegWrite(EX_RegWrite),
+        .EX_WriteRegister(EX_WriteRegister),
+        .MEM_RegWrite(MEM_RegWrite),
+        .MEM_WriteRegister(MEM_WriteRegister),
+        .PCWrite(ID_PCWrite),
+        .IF_ID_Write(IF_ID_Enable),
+        .ID_EX_FlushCtrl(ID_EX_Flush)
+        
+        );
     
     //----------------------------------Resolve Branch & Jumps, Get NextPC value--------------------------------------
   
@@ -186,8 +206,10 @@
     assign ID_BranchTarget = {ID_InstSignExtOut << 2} + ID_PCAddResult;
    
     
-    assign ID_JumpTarget = { ID_PCAddResult[31:28], ID_Instruction[25:0], 2'b00};   //jump address
+    assign ID_JumpTarget  = { ID_PCAddResult[31:28], ID_Instruction[25:0], 2'b00};   //jump address
     assign ID_JRTarget    = ID_ReadData1;                 //rs value
+    
+    assign IF_ID_Flush    = (ID_BranchTaken | ID_DoJump | ID_DoJR) & ID_PCWrite;             //flag to control flush of IF_ID if branch or jump is taken
     
    //Priority mux to determine next PC value
     reg [31:0] next_pc;
@@ -202,7 +224,7 @@
             next_pc = ID_BranchTarget;
         end
         else begin
-            next_pc = ID_PCAddResult;
+            next_pc = IF_PCAddResult;                     //changed from ID_ to IF_
         end
      end 
      
@@ -213,6 +235,7 @@
     assign ID_Shamt      = {27'b0, ID_Instruction[10:6]};
     
     assign ID_OpCode     = ID_Instruction[31:26];
+    assign ID_Rs         = ID_Instruction[25:21];
     assign ID_Rt         = ID_Instruction[20:16];
     assign ID_Rd         = ID_Instruction[15:11];
     assign ID_Funct      = ID_Instruction[5:0];
@@ -235,7 +258,9 @@
           .storeWidth(ID_StoreWidth),
           .DoJump(ID_DoJump),
           .DoJR(ID_DoJR),
-          .IsShift(ID_IsShift)
+          .IsShift(ID_IsShift),
+          .UsesRs(ID_UsesRs),
+          .UsesRt(ID_UsesRt)
         );
         
 
@@ -246,7 +271,7 @@
         .clk(Clk),
         .reset(Reset),
         .enable(1'b1),
-        .flush(1'b0),
+        .flush(ID_EX_Flush),
     
         // Inputs from ID stage (control)
         .RegDst_in(ID_RegDst),
