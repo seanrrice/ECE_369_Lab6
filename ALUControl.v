@@ -19,14 +19,15 @@ module ALUControlUnit(
                 ALUControl = 4'h0;
             end
             
-            //2'b01: deleted (no longer used)
+            2'b01: begin
+                ALUControl = 4'h2;  //mul 
+            end
             
             2'b10: begin
                 // R-type
                 case (funct)
                     6'h20: ALUControl = 4'h0; // add
                     6'h22: ALUControl = 4'h1; // sub
-                    6'h18: ALUControl = 4'h2; // mult (HI/LO in a full MIPS)
                     6'h25: ALUControl = 4'h3; // or
                     6'h26: ALUControl = 4'h4; // xor
                     6'h27: ALUControl = 4'h5; // nor
