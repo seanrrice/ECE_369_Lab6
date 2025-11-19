@@ -37,7 +37,8 @@ module Controller(
              OP_BLEZ  = 6'b000110,
              OP_BGTZ  = 6'b000111,
              OP_REGI  = 6'b000001,
-             OP_XORI  = 6'b001110;
+             OP_XORI  = 6'b001110,
+             OP_MUL   = 6'b011100;
 
   // R-type funct
   localparam FUNCT_JR   = 6'b001000,
@@ -122,7 +123,15 @@ module Controller(
           UsesRt   = 1'b1;
         end
       end
-
+    //----------------------MUL----------------------------
+      OP_MUL: begin
+         RegDst   = RD_RD;
+         RegWrite = 1'b1;
+         ALUOp    = 2'b01;     //special case bc mul and srl have same opcode
+         UsesRs   = 1'b1;
+         UsesRt   = 1'b1;
+      end
+        
       // ---------------- BRANCHES ----------------
       OP_BEQ: begin
         Branch     = 1'b1;
