@@ -67,7 +67,7 @@ module RegisterFile(ReadRegister1, ReadRegister2, WriteRegister, WriteData, RegW
     end
     
     // write operations only on positive clock edge
-	always @(posedge Clk)
+	always @(negedge Clk)
 	begin
 	   // as long as RegWrite is asserted and not accessing
 	   // register 0, write the data to register
