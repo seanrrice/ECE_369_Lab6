@@ -19,9 +19,10 @@ module BranchLogic(
 
     // Signed view of A for <, <=, >, >= against 0
     wire signed [31:0] sA = A;
+    wire signed [31:0] sB = B;
 
     // Basic predicates
-    wire eq   = (A == B);
+    wire eq   = (sA == sB);
     wire neq  = ~eq;
     wire ltz  = (sA <  0);
     wire gtz  = (sA >  0);
