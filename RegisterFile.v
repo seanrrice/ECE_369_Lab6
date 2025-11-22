@@ -78,8 +78,8 @@ module RegisterFile(ReadRegister1, ReadRegister2, WriteRegister, WriteData, RegW
 	// read operations immediately
 	always @(*)
 	begin
-	   ReadData1 <= registers[ReadRegister1];
-	   ReadData2 <= registers[ReadRegister2];
+	   ReadData1 = registers[ReadRegister1];
+	   ReadData2 = registers[ReadRegister2];
 	end
 
 endmodule
