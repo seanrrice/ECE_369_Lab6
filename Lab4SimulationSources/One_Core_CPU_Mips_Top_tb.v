@@ -53,7 +53,7 @@ module One_Core_CPU_Mips_Top_tb;
       // Assumes these exist in your ID stage / top:
       if (dut.ID_BranchTaken) begin
         $display("[%0t] C%0d BRANCH taken at PC=%0d -> next PC=%0d",
-                 $time, cycle, dut.ID_PCAddResult - 4, dut.ID_PCPlus8 - 8);
+                 $time, cycle, dut.ID_PCAddResult - 4, dut.ID_NextPC);
       end
       if (dut.ID_DoJump) begin
         $display("[%0t] C%0d JUMP at PC=%0d -> next PC=%0d",
@@ -63,7 +63,7 @@ module One_Core_CPU_Mips_Top_tb;
       // --- Commit log from WB stage (your original) ---
       if (dut.WB_RegWrite) begin
         $display("[%0t] C%0d WB: R[%0d] <= %0d  (PC=%0d)",
-                 $time, cycle, dut.WB_WriteRegister, dut.WB_WriteData, dut.WB_PCPlus8 - 8);
+                 $time, cycle, dut.WB_WriteRegister, $signed(dut.WB_WriteData), dut.WB_PCPlus8 - 8);
       end
       else if (dut.MEM_MemWrite) begin
         $display("[%0t] C%0d Store: MemWrite=1 (PC=%0d)",
