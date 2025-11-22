@@ -51,7 +51,8 @@
     wire IF_ID_Enable;
     wire IF_ID_Flush;
     
-   // wire ID_EX_Enable;                     //this is always 1 (for now)
+    wire ID_EX_Enable;       
+    assign ID_EX_Enable = 1'b1;      //always enabled       
     wire ID_EX_Flush;
     
     wire ID_PCWrite;                        //PC stalls if set to 0
@@ -160,7 +161,7 @@
              BLTZ    = 3'b101,
              BR_NONE = 3'b111;
       
-    
+  
 //------------------------------------------------------- Instruction Fetch Stage of Data Path----------------------------------------------------------
     
    // Mux32Bit4To1 Mux32Bit4To1_1(IF_PCAddResult, MEM_ExecutionAdderResult, **JumpTarget**, **JRTarget**, MEM_PCSrc, IF_MuxToPCValue);  //FIXME PCSrc
@@ -202,7 +203,7 @@
     
     //----------------------------------Resolve Branch & Jumps, Get NextPC value--------------------------------------
   
-    BranchLogic BranchLogic1(ID_ReadData1, ID_Read_Data2, ID_Branch, ID_BranchType, ID_BranchTaken); 
+    BranchLogic BranchLogic1(ID_ReadData1, ID_ReadData2, ID_Branch, ID_BranchType, ID_BranchTaken); 
     assign ID_BranchTarget = {ID_InstSignExtOut << 2} + ID_PCAddResult;
    
     
@@ -270,7 +271,7 @@
         // Controls
         .clk(Clk),
         .reset(Reset),
-        .enable(1'b1),
+        .enable(ID_EX_Enable),
         .flush(ID_EX_Flush),
     
         // Inputs from ID stage (control)
