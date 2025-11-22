@@ -1,0 +1,49 @@
+	//	main:		nop ->	main:		nop
+20080000	//	loop:		addi	$t0, $zero, 0 ->	loop:		addi	$t0, $zero, 0
+20090006	//			addi	$t1, $zero, 6 ->			addi	$t1, $zero, 6
+200a000a	//			addi	$t2, $zero, 10 ->			addi	$t2, $zero, 10
+ad090000	//			sw	$t1, 0($t0) ->			sw	$t1, 0($t0)
+ad0a0004	//			sw	$t2, 4($t0) ->			sw	$t2, 4($t0)
+8d100000	//			lw	$s0, 0($t0) ->			lw	$s0, 0($t0)
+8d110004	//			lw	$s1, 4($t0) ->			lw	$s1, 4($t0)
+02305822	//			sub	$t3, $s1, $s0 ->			sub	$t3, $s1, $s0
+000b60c0	//			sll	$t4, $t3, 3 ->			sll	$t4, $t3, 3
+000c6882	//			srl	$t5, $t4, 2 ->			srl	$t5, $t4, 2
+71ab4802	//			mul	$t1, $t5, $t3 ->			mul	$t1, $t5, $t3
+a1090000	//			sb	$t1, 0($t0) ->			sb	$t1, 0($t0)
+810a0000	//			lb	$t2, 0($t0) ->			lb	$t2, 0($t0)
+a5110000	//			sh	$s1, 0($t0) ->			sh	$s1, 0($t0)
+85090000	//			lh	$t1, 0($t0) ->			lh	$t1, 0($t0)
+05210001	//			bgez	$t1, bgezTaken ->			bgez	$t1, bgezTaken
+20090004	//			addi	$t1, $zero, 4 ->			addi	$t1, $zero, 4
+20090011	//	bgezTaken:	addi	$t1, $zero, 17 ->	bgezTaken:	addi	$t1, $zero, 17
+200a0011	//			addi	$t2, $zero, 17 ->			addi	$t2, $zero, 17
+200f0001	//			addi	$t7, $zero, 1 ->			addi	$t7, $zero, 1
+112a0001	//			beq	$t1, $t2, beqTaken ->			beq	$t1, $t2, beqTaken
+2009001b	//			addi	$t1, $zero, 27 ->			addi	$t1, $zero, 27
+21ef0001	//	beqTaken:	addi	$t7, $t7, 1 ->	beqTaken:	addi	$t7, $t7, 1
+152f0001	//			bne	$t1, $t7, BNE_TAKEN ->			bne	$t1, $t7, BNE_TAKEN
+21ef0064	//			addi	$t7, $t7, 100 ->			addi	$t7, $t7, 100
+21ef0002	//	BNE_TAKEN:	addi	$t7, $t7, 2 ->	BNE_TAKEN:	addi	$t7, $t7, 2
+20090006	//			addi	$t1, $zero, 6 ->			addi	$t1, $zero, 6
+200a000a	//			addi	$t2, $zero, 10 ->			addi	$t2, $zero, 10
+200bfffd	//			addi	$t3, $zero, -3 ->			addi	$t3, $zero, -3
+05210001	//			bgez	$t1, BGEZ_TAKEN ->			bgez	$t1, BGEZ_TAKEN
+21ef0064	//			addi	$t7, $t7, 100 ->			addi	$t7, $t7, 100
+21ef0004	//	BGEZ_TAKEN:	addi	$t7, $t7, 4 ->	BGEZ_TAKEN:	addi	$t7, $t7, 4
+05600001	//			bltz	$t3, BLTZ_TAKEN ->			bltz	$t3, BLTZ_TAKEN
+21ef0064	//			addi	$t7, $t7, 100 ->			addi	$t7, $t7, 100
+21ef0008	//	BLTZ_TAKEN:	addi	$t7, $t7, 8 ->	BLTZ_TAKEN:	addi	$t7, $t7, 8
+1d400001	//			bgtz	$t2, BGTZ_TAKEN ->			bgtz	$t2, BGTZ_TAKEN
+21ef0064	//			addi	$t7, $t7, 100 ->			addi	$t7, $t7, 100
+21ef0010	//	BGTZ_TAKEN:	addi	$t7, $t7, 16 ->	BGTZ_TAKEN:	addi	$t7, $t7, 16
+19600001	//			blez	$t3, BLEZ_TAKEN ->			blez	$t3, BLEZ_TAKEN
+21ef0064	//			addi	$t7, $t7, 100 ->			addi	$t7, $t7, 100
+21ef0020	//	BLEZ_TAKEN:	addi	$t7, $t7, 32 ->	BLEZ_TAKEN:	addi	$t7, $t7, 32
+018d9824	//			and	$s3, $t4, $t5 ->			and	$s3, $t4, $t5
+018da025	//			or	$s4, $t4, $t5 ->			or	$s4, $t4, $t5
+018da827	//			nor	$s5, $t4, $t5 ->			nor	$s5, $t4, $t5
+018db026	//			xor	$s6, $t4, $t5 ->			xor	$s6, $t4, $t5
+31b000f0	//			andi	$s0, $t5, 0x00F0 ->			andi	$s0, $t5, 0x00F0
+3591000f	//			ori	$s1, $t4, 0x000F ->			ori	$s1, $t4, 0x000F
+3992000f	//			xori	$s2, $t4, 0x000F ->			xori	$s2, $t4, 0x000F
