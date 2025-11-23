@@ -55,7 +55,7 @@ module One_Core_CPU_Mips_Top_tb;
         $display("[%0t] C%0d BRANCH taken at PC=%0d -> next PC=%0d",
                  $time, cycle, dut.ID_PCAddResult - 4, dut.ID_NextPC);
       end
-      if (dut.ID_DoJump) begin
+      if (dut.ID_DoJump || dut.ID_DoJR) begin
         $display("[%0t] C%0d JUMP at PC=%0d -> next PC=%0d",
                  $time, cycle, dut.ID_PCPlus8 - 8, dut.ID_NextPC);
       end
