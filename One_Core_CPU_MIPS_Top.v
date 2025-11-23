@@ -297,7 +297,6 @@
         .Rd_in(ID_Rd),
         .Funct_in(ID_Funct),
         .PC_in(ID_PCAddResult),
-        .JumpTarget_in(ID_JumpTarget),
         .PCPlus8_in(ID_PCPlus8),
         .Shamt_in(ID_Shamt),
       
@@ -539,10 +538,10 @@ EX_MEM EX_MEM_1 (
     assign WB_WriteData =
         (WB_MemToReg == 2'b00)? WB_ALUResult :
         (WB_MemToReg == 2'b01)? WB_MemReadData  :
-                                WB_PCPlus8;         //link value for Jal
+                                (WB_PCPlus8-4);         //link value for Jal NOTE: changed to (WB_PCPlus8 - 4) b/c we ommitted the branch delay slot after shifting branches to ID stage
    
    assign WriteDataDisplay  = WB_WriteData;
-   assign PCAddDisplay      = ID_PCAddResult;
+   assign PCAddDisplay      = WB_PCPlus8 - 8;
    
         
 endmodule
