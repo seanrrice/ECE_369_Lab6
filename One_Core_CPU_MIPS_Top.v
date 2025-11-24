@@ -538,10 +538,22 @@ EX_MEM EX_MEM_1 (
     assign WB_WriteData =
         (WB_MemToReg == 2'b00)? WB_ALUResult :
         (WB_MemToReg == 2'b01)? WB_MemReadData  :
-                                (WB_PCPlus8-4);         //link value for Jal NOTE: changed to (WB_PCPlus8 - 4) b/c we ommitted the branch delay slot after shifting branches to ID stage
+        (WB_MemToReg == 2'b10)?(WB_PCPlus8-4) :
+                               32'b0 ;         //link value for Jal NOTE: changed to (WB_PCPlus8 - 4) b/c we ommitted the branch delay slot after shifting branches to ID stage
    
    assign WriteDataDisplay  = WB_WriteData;
-   assign PCAddDisplay      = WB_PCPlus8 - 8;
+   
+   reg [31:0] pcdisplay;                    
+   always @* begin
+        if(Reset) begin
+            pcdisplay = 32'b0;
+        end
+        else begin                              
+            pcdisplay = WB_PCPlus8 - 8;
+        end
+    end
+        
+   assign PCAddDisplay      = pcdisplay;
    
         
 endmodule
