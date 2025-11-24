@@ -58,7 +58,8 @@ module Controller(
   // MemtoReg
   localparam M2R_MEM = 2'b01,                //changed
              M2R_ALU = 2'b00,
-             M2R_PC8 = 2'b10;
+             M2R_PC8 = 2'b10,
+             M2R_ZERO = 2'b11;          //no write register value (stores)
 
   // RegDst
   localparam RD_RT = 2'b00,
@@ -81,7 +82,7 @@ module Controller(
     ALUOp        = 2'b00;
     MemRead      = 1'b0;
     MemWrite     = 1'b0;
-    MemToReg     = M2R_ALU;
+    MemToReg     = M2R_ZERO;
     Branch       = 1'b0;
     branchType   = BR_NONE;
     loadWidth    = 2'b00;
@@ -113,6 +114,7 @@ module Controller(
             RegWrite = 1'b1;
             ALUOp    = 2'b10;
             UsesRt   = 1'b1;
+            MemToReg = M2R_ALU;
             
         end
         else begin                      //regular R-Type
@@ -121,6 +123,7 @@ module Controller(
           ALUOp    = 2'b10;
           UsesRs   = 1'b1;
           UsesRt   = 1'b1;
+          MemToReg = M2R_ALU;
         end
       end
     //----------------------MUL----------------------------
@@ -130,6 +133,7 @@ module Controller(
          ALUOp    = 2'b01;     //special case bc mul and srl have same opcode
          UsesRs   = 1'b1;
          UsesRt   = 1'b1;
+         MemToReg = M2R_ALU;
       end
         
       // ---------------- BRANCHES ----------------
@@ -191,6 +195,7 @@ module Controller(
         ALUSrc   = 1'b1;
         ALUOp    = 2'b00;
         UsesRs   = 1'b1;
+        MemToReg = M2R_ALU;
       end
 
       OP_ANDI: begin
@@ -199,6 +204,7 @@ module Controller(
         ALUOp    = 2'b11;
         extOp    = 1'b0;
         UsesRs   = 1'b1;
+        MemToReg = M2R_ALU;
       end
 
       OP_ORI: begin
@@ -207,6 +213,7 @@ module Controller(
         ALUOp    = 2'b11;
         extOp    = 1'b0;
         UsesRs   = 1'b1;
+        MemToReg = M2R_ALU;
       end
 
       OP_XORI: begin
@@ -215,6 +222,7 @@ module Controller(
         ALUOp    = 2'b11;
         extOp    = 1'b0;
         UsesRs   = 1'b1;
+        MemToReg = M2R_ALU;
       end
 
       OP_SLTI: begin
@@ -222,6 +230,7 @@ module Controller(
         ALUSrc   = 1'b1;
         ALUOp    = 2'b11;
         UsesRs   = 1'b1;
+        MemToReg = M2R_ALU;
       end
 
       // ---------------- LOADS ----------------
