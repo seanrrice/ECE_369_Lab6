@@ -33,7 +33,6 @@ module ID_EX (
     input      [4:0]   Rd_in,
     input      [5:0]   Funct_in,
     input      [31:0]  PC_in,         // typically PC+4
-    input      [31:0]  JumpTarget_in,
     input      [31:0]  PCPlus8_in,
     input      [31:0]  Shamt_in,
 
@@ -57,7 +56,6 @@ module ID_EX (
     output wire  [4:0] Rd_out,
     output wire  [5:0] Funct_out,
     output wire [31:0] PC_out,
-    output wire [31:0] JumpTarget_out,
     output wire [31:0] PCPlus8_out,
     output wire [31:0] Shamt_out
 );
@@ -77,7 +75,6 @@ module ID_EX (
     reg [5:0]  OpCode_q;
     reg [4:0]  Rt_q, Rd_q;
     reg [5:0]  Funct_q;
-    reg [31:0] JumpTarget_q;
     reg [31:0] PCPlus8_q;
     reg [5:0]  Shamt_q;
     
@@ -92,7 +89,6 @@ module ID_EX (
     assign loadWidth_out        =   loadWidth_q;
     assign loadUnsigned_out     =   loadUnsigned_q;
     assign storeWidth_out       =   storeWidth_q;
-    assign JumpTarget_out       =   JumpTarget_q;
     assign PCPlus8_out          =   PCPlus8_q;
     assign IsShift_out          =   IsShift_q;
     assign Shamt_out            =   Shamt_q;
@@ -134,7 +130,6 @@ module ID_EX (
             Rd_q         <= 5'b0;
             Funct_q      <= 6'b0;
             PC_q         <= 32'b0;
-            JumpTarget_q <= 32'b0;
             PCPlus8_q    <= 32'b0;
             Shamt_q      <= 32'b0;
         end 
@@ -164,8 +159,7 @@ module ID_EX (
                 Rd_q         <= 5'b0;
                 Funct_q      <= 6'b0;
                 PC_q         <= 32'b0;
-                JumpTarget_q <= 32'b0;
-                PCPlus8_q    <= 32'b0;
+                PCPlus8_q    <= PCPlus8_in;
                 Shamt_q      <= 32'b0;
             end 
             else begin
@@ -191,7 +185,6 @@ module ID_EX (
                 Rd_q         <= Rd_in;
                 Funct_q      <= Funct_in;
                 PC_q         <= PC_in;
-                JumpTarget_q <= JumpTarget_in;
                 PCPlus8_q    <= PCPlus8_in;
                 Shamt_q      <= Shamt_in;
             end
