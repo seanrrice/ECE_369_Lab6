@@ -37,7 +37,7 @@ module IF_ID (
         end else if (enable) begin
             if (flush) begin
                 // Insert bubble (NOP)
-                PC_q          <= 32'b0;
+                PC_q          <= PC_in;
                 Instruction_q <= 32'b0;
             end else begin
                 // Normal capture
