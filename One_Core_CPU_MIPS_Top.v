@@ -541,19 +541,25 @@ EX_MEM EX_MEM_1 (
         (WB_MemToReg == 2'b10)?(WB_PCPlus8-4) :
                                32'b0 ;         //link value for Jal NOTE: changed to (WB_PCPlus8 - 4) b/c we ommitted the branch delay slot after shifting branches to ID stage
    
-   assign WriteDataDisplay  = WB_WriteData;
-   
-   reg [31:0] pcdisplay;                    
-   always @* begin
+   //assign WriteDataDisplay  = WB_WriteData;
+   reg [31:0] v0_shadow, v1_shadow;              // X,Y for best minSAD coordinates tracked by v0, v1. v0 tracks reg $2, v1 tracks reg$3
+                       
+   always @(posedge Clk or posedge Reset) begin
         if(Reset) begin
-            pcdisplay = 32'b0;
+            v0_shadow <= 32'd0;    //start at (0, 0)
+            v1_shadow <= 32'd0;
         end
-        else begin                              
-            pcdisplay = WB_PCPlus8 - 8;
+        else if(WB_RegWrite) begin                             
+            if(WB_WriteRegister == 5'd2)begin
+                v0_shadow <= WB_WriteData;
+            end
+            if (WB_WriteRegister == 5'd3) begin
+                v1_shadow <= WB_WriteData;
+            end
         end
     end
         
-   assign PCAddDisplay      = pcdisplay;
-   
+   assign PCAddDisplay      = v0_shadow;    // show X / row / best_i
+   assign WriteDataDisplay  = v1_shadow;    // show Y / col / best_j
         
 endmodule
